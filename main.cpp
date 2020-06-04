@@ -19,33 +19,26 @@ struct Student{
   int hashNumber;
 };
 
-struct HashTable {
-  int size;
-  Student** array = new Student*[size];
-};
 
-void addStudent(HashTable* &table);
+void addStudent(Student** &array, int size);
 void deleteStu(vector<Student*>* stuList);
-void print(HashTable* table);
+void print(Student** &array, int size);
 int hashFunction(Student* stu, int size);
 Student* randomStu();
-Student* endList(Student* start);
+Student* endList(Student* &start);
 void printRow(Student* start);
 
 
 int main() {
-  HashTable* table = new HashTable();
-  table -> size = 100;
-  for (int x = 0; x <= 100; x++) {
-    table->array[x] = NULL;
-  }
+  int size = 100;
+  Student** array = new Student*[size];
   bool start = true;
   while (start == true) {
     char input[100];
     cout << "Enter a command" << endl;
     cin.getline(input, 100);
     if (strcmp(input, "ADD") == 0) {
-      addStudent(table);
+      addStudent(array, size);
       cout << "Done" << endl;
     }
     else if (strcmp(input, "ADD RANDOM") == 0) {
@@ -55,7 +48,7 @@ int main() {
       cout << "Type ADD to add a student\nType PRINT to print list\nType DELETE to delete student\nType QUIT to quit" << endl; 
     }
     else if (strcmp(input, "PRINT") == 0) {
-      print(table);
+      print(array, size);
     }
     else if (strcmp(input, "DELETE") == 0) {
       
@@ -65,17 +58,12 @@ int main() {
       break;
     }
     else if (strcmp(input, "TEST") == 0) {
-      Student* newStu = new Student();
-      strncpy(newStu -> fname, "Walter", 100);
-      strncpy(newStu -> lname, "Hagerman", 100);
-      newStu -> gpa = 3.9;
-      newStu -> id = 23424;
-      cout << hashFunction(newStu, 100) << endl;
+
     }
   }
 }
 
-Student* endList(Student* start) {
+Student* endList(Student* &start) {
   if (start -> next != NULL) {
     return endList(start->next);
   }
@@ -111,7 +99,7 @@ int hashFunction(Student* stu, int size) {
   return retNum;
 }
 
-void addStudent(HashTable* &table) {
+void addStudent(Student** &array, int size) {
   Student* ptrStu = new Student();
   cout << "Enter student first name" << endl;
   cin.getline(ptrStu->fname, 100);
@@ -125,18 +113,15 @@ void addStudent(HashTable* &table) {
   char getGpa[100];
   cin.getline(getGpa, 100);
   ptrStu -> gpa =  atoi(getGpa);
-  int s = table -> size;
-  int index = hashFunction(ptrStu, s);
+  int index = hashFunction(ptrStu, size);
   cout << index << endl;
-  Student** arr = table -> array;
-  if (arr[index] == NULL) {
+  if (array[index] == NULL) {
     cout << "New" << endl;
-    arr[index] = ptrStu;
+    array[index] = ptrStu;
   }
   else {
-    endList(arr[index])-> next = ptrStu;
+    endList(array[index])-> next = ptrStu;
   }
-  table->array = arr;
 }
 
 void deleteStu(vector<Student*>* stuList) {
@@ -145,12 +130,11 @@ void deleteStu(vector<Student*>* stuList) {
   cin >> del;
 }
 
-void print(HashTable* table) {
-  Student** arr = table->array;
-  for (int c = 0; c <= table->size; c++) {
-    if (arr[c] != NULL) {
+void print(Student** &array, int size) {
+  for (int c = 0; c <= size; c++) {
+    if (array[c] != NULL) {
       cout << "Found at index: " << c << endl;
-      printRow(arr[c]);
+      printRow(array[c]);
     }
   }
 }
