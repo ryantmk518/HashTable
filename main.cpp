@@ -9,7 +9,7 @@
 
 using namespace std;
 
-//Hash Table. Ryan Thammakhoune. 
+//Hash Table. Ryan Thammakhoune. Enter Students, Random students, delete, print table.
 
 struct Student{
   char fname[100];
@@ -21,8 +21,8 @@ struct Student{
 };
 
 
-Student** addStudent(Student** &array, Student* ptrStu, int &size);
-void deleteStu(vector<Student*>* stuList);
+Student** addStudent(Student** array, Student* ptrStu, int &size);
+Student** deleteStu(Student** array, int &size);
 void print(Student** &array, int size);
 int hashFunction(Student* stu, int size);
 Student* randomStu(vector<char*> first, vector<char*> last);
@@ -31,12 +31,13 @@ void printRow(Student* start);
 int checkCollision(Student* start, int count);
 Student** rehash(Student** array, int &size);
 int checkRehash(Student** array, int size);
+Student** reAdd(Student** array, Student* reStu, int &size);
 
 
 int main() {
 
 
-  vector<char*> randFirst;
+  vector<char*> randFirst; //Random names
   ifstream file;
   file.open("fname.txt"); //Open the inputted file name
   char* output = new char[999];
@@ -50,7 +51,6 @@ int main() {
     randFirst.push_back(split);
     split = strtok(NULL, " ");
   }
-  cout << "First done" << endl;
   
   vector<char*> randLast;
   ifstream file2;
@@ -73,7 +73,7 @@ int main() {
   bool start = true;
   while (start == true) {
     char input[100];
-    cout << "Enter a command" << endl;
+    cout << "Enter a command (ADD, ADD RANDOM, DELETE, PRINT, QUIT)" << endl;
     cin.getline(input, 100);
     if (strcmp(input, "ADD") == 0) {
       Student* ptrStu = new Student();
@@ -109,7 +109,7 @@ int main() {
       print(array, size);
     }
     else if (strcmp(input, "DELETE") == 0) {
-      
+      array = deleteStu(array, size);
     }
     else if (strcmp(input, "QUIT") == 0) {
       start = false;
@@ -121,20 +121,54 @@ int main() {
   }
 }
 
+Student** reAdd(Student** array, Student* reStu, int &size) { //Reset the next
+  cout << "Re Adding" << endl;
+  if (reStu -> next != NULL) {
+    cout << "Has next" << endl;
+    Student* newStu = reStu;
+    newStu -> next = NULL;
+    Student** newArray = addStudent(array, newStu, size);
+    cout << "Going next" << endl;
+    return reAdd(newArray, reStu -> next, size);
+  }
+  else {
+    cout << "Does not have next" << endl;
+    Student** newArray = addStudent(array, reStu, size);
+    return newArray;
+  }
+}
+
 Student** rehash(Student** array, int &size) {
   cout << "Rehashing" << endl;
   size = size * 2;
+  cout << "New size: " << size << endl;
   Student** newArray = new Student*[size];
   for (int b = 0; b <= size/2; b++) {
     if (array[b] != NULL) {
       cout << "Found at: " << b << endl;
-      newArray = addStudent(newArray, array[b], size);
+      Student* newStu = array[b];
+      newStu->next = NULL;
+      newArray = addStudent(newArray, newStu, size);
+      if (array[b] -> next != NULL) {
+        cout << "Has next" << endl;
+        Student* newStu2 = array[b] -> next;
+        newStu2-> next = NULL;
+        newArray = addStudent(newArray, newStu2, size);
+        if (array[b] -> next -> next != NULL) {
+          Student* newStu3 = array[b] -> next -> next;
+          newStu3 -> next = NULL;
+          newArray = addStudent(newArray, newStu3, size);
+        }
+      }
+      else {
+        cout << "Has no next" << endl;
+      }
     }
   }
   return newArray;
 }
 
-int checkCollision(Student* start, int count) {
+int checkCollision(Student* start, int count) { //Check for collision
   int newCount = count + 1;
   if (start->next != NULL) {
     return checkCollision(start->next, newCount);
@@ -144,7 +178,7 @@ int checkCollision(Student* start, int count) {
   }
 }
 
-Student* endList(Student* &start) {
+Student* endList(Student* &start) { //Last in the chain
   if (start -> next != NULL) {
     return endList(start->next);
   }
@@ -153,7 +187,7 @@ Student* endList(Student* &start) {
   }
 }
 
-void printRow(Student* start) {
+void printRow(Student* start) { //Print entire row
   cout << start->fname << " " << start->lname << " ID: " << start->id << " GPA: " << start->gpa << endl;
   if (start->next != NULL) {
     printRow(start->next);
@@ -183,22 +217,19 @@ int hashFunction(Student* stu, int size) {
 
 
 
-Student** addStudent(Student** &array, Student* ptrStu, int &size) {
+Student** addStudent(Student** array, Student* ptrStu, int &size) { //Add into table
+  cout << "Adding student: " << ptrStu->fname << " " << ptrStu->lname << " " << ptrStu->id << " " << ptrStu->gpa << endl;
   int index = hashFunction(ptrStu, size);
   cout <<"Index: " << index << endl;
   if (array[index] == NULL) {
     cout << "New spot" << endl;
     array[index] = ptrStu;
-    if (ptrStu -> next != NULL) {
-      return (addStudent(array, ptrStu -> next, size));
-    }
-    else {
-      return array;
-    }
+    return array;
   }
   else {
     cout << "Collisions: " << checkCollision(array[index], 0) << endl;
     if (checkCollision(array[index], 0) == 2) {
+      endList(array[index]) -> next = ptrStu;
       return rehash(array, size);
     }
     else {
@@ -208,10 +239,36 @@ Student** addStudent(Student** &array, Student* ptrStu, int &size) {
   }
 }
 
-void deleteStu(vector<Student*>* stuList) {
-  int del;
+Student** deleteStu(Student** array, int &size) {
+  char del[9];
   cout<< "Enter id of student to delete" << endl;
-  cin >> del;
+  cin.getline(del, 9);
+  int num = atoi(del);
+  for (int c = 0; c <= size; c++) {
+    if (array[c]->id == num) {
+      if (array[c] -> next = NULL) {
+        cout << "Found" << endl;
+        array[c] = NULL;
+        break;
+      }
+      else {
+        array[c] = array[c] -> next;
+        break;
+      }
+    }
+    else if (array[c] -> next != NULL && array[c] -> next -> id == num) {
+      if (array[c] -> next -> next == NULL) {
+        array[c] -> next = NULL;
+      }
+      else {
+        array[c] -> next = array[c] -> next -> next;
+      }
+    }
+    else if (array[c] -> next != NULL && array[c] -> next -> next != NULL && array[c] -> next -> next -> id == num) {
+      array[c] -> next -> next = NULL;
+    }
+  }
+  return array;
 }
 
 void print(Student** &array, int size) {
@@ -224,17 +281,16 @@ void print(Student** &array, int size) {
 }
 
 
-Student* randomStu(vector<char*> first, vector<char*> last) {
+Student* randomStu(vector<char*> first, vector<char*> last) { //Returns a random student. Due to how rand() works, first student will always be the same.
   Student* newStu = new Student();
   int fSize = first.size();
   int lSize = last.size();
-  int randF = rand() % fSize;
+  int randF = rand() % fSize; //Random ints
   int randL = rand() % lSize;
-  cout << randF << randL << endl;
   int fIndex = 0;
   int lIndex = 0;
   vector<char*> :: iterator i;
-  for ( i = first.begin(); i != first.end(); i++) {
+  for ( i = first.begin(); i != first.end(); i++) { //If the index matches random int
     if (fIndex == randF) {
       cout << (*i) << endl;
       strcpy(newStu -> fname, (*i));
@@ -249,7 +305,7 @@ Student* randomStu(vector<char*> first, vector<char*> last) {
     }
     lIndex++;
   }
-  int newID = rand() % 3000 + 2000;
+  int newID = rand() % 3000 + 2000; //Add random values
   newStu -> id = newID;
   float newGPA = ((float) rand()) / ((float) RAND_MAX) + 3.0;
   newGPA = (int) (newGPA * 10 + 0.5);
