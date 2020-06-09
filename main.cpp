@@ -21,7 +21,7 @@ struct Student{
 };
 
 
-Student** addStudent(Student** array, Student* ptrStu, int &size);
+Student** addStudent(Student** &array, Student* &ptrStu, int &size);
 Student** deleteStu(Student** array, int &size);
 void print(Student** &array, int size);
 int hashFunction(Student* stu, int size);
@@ -29,9 +29,8 @@ Student* randomStu(vector<char*> first, vector<char*> last);
 Student* endList(Student* &start);
 void printRow(Student* start);
 int checkCollision(Student* start, int count);
-Student** rehash(Student** array, int &size);
+Student** rehash(Student** &array, int &size);
 int checkRehash(Student** array, int size);
-Student** reAdd(Student** array, Student* reStu, int &size);
 
 
 int main() {
@@ -98,7 +97,8 @@ int main() {
       cin.getline(inNum, 9);
       int stuNum = atoi(inNum);
       for (int q = 0; q < stuNum; q++) {
-        array = addStudent(array, randomStu(randFirst, randLast), size);
+        Student* ranStu = randomStu(randFirst, randLast);
+        array = addStudent(array, ranStu, size);
       }
     }
     else if (strcmp(input, "HELP") == 0) {
@@ -121,24 +121,9 @@ int main() {
   }
 }
 
-Student** reAdd(Student** array, Student* reStu, int &size) { //Reset the next
-  cout << "Re Adding" << endl;
-  if (reStu -> next != NULL) {
-    cout << "Has next" << endl;
-    Student* newStu = reStu;
-    newStu -> next = NULL;
-    Student** newArray = addStudent(array, newStu, size);
-    cout << "Going next" << endl;
-    return reAdd(newArray, reStu -> next, size);
-  }
-  else {
-    cout << "Does not have next" << endl;
-    Student** newArray = addStudent(array, reStu, size);
-    return newArray;
-  }
-}
 
-Student** rehash(Student** array, int &size) {
+
+Student** rehash(Student** &array, int &size) {
   cout << "Rehashing" << endl;
   size = size * 2;
   cout << "New size: " << size << endl;
@@ -146,12 +131,21 @@ Student** rehash(Student** array, int &size) {
   for (int b = 0; b <= size/2; b++) {
     if (array[b] != NULL) {
       cout << "Found at: " << b << endl;
-      Student* newStu = array[b];
+      Student* newStu = new Student();
+      strcpy(newStu -> fname, array[b] -> fname);
+      strcpy(newStu -> lname, array[b] -> lname);
+      newStu-> id = array[b] -> id;
+      newStu -> gpa = array[b] -> gpa;
       newStu->next = NULL;
       newArray = addStudent(newArray, newStu, size);
       if (array[b] -> next != NULL) {
         cout << "Has next" << endl;
-        Student* newStu2 = array[b] -> next;
+        Student* newStu2 = new Student();
+        strcpy(newStu2 -> fname,  array[b] -> next -> fname);
+        strcpy(newStu2 -> lname, array[b] -> next -> lname);
+        newStu2-> id = array[b] -> next -> id;
+        newStu2 -> gpa = array[b] -> next -> gpa;
+        newStu2->next = NULL;
         newStu2-> next = NULL;
         newArray = addStudent(newArray, newStu2, size);
         if (array[b] -> next -> next != NULL) {
@@ -160,6 +154,7 @@ Student** rehash(Student** array, int &size) {
           newArray = addStudent(newArray, newStu3, size);
         }
       }
+
       else {
         cout << "Has no next" << endl;
       }
@@ -217,7 +212,7 @@ int hashFunction(Student* stu, int size) {
 
 
 
-Student** addStudent(Student** array, Student* ptrStu, int &size) { //Add into table
+Student** addStudent(Student** &array, Student* &ptrStu, int &size) { //Add into table
   cout << "Adding student: " << ptrStu->fname << " " << ptrStu->lname << " " << ptrStu->id << " " << ptrStu->gpa << endl;
   int index = hashFunction(ptrStu, size);
   cout <<"Index: " << index << endl;
@@ -240,35 +235,41 @@ Student** addStudent(Student** array, Student* ptrStu, int &size) { //Add into t
 }
 
 Student** deleteStu(Student** array, int &size) {
+  Student** newArray = array;
   char del[9];
   cout<< "Enter id of student to delete" << endl;
   cin.getline(del, 9);
   int num = atoi(del);
   for (int c = 0; c <= size; c++) {
-    if (array[c]->id == num) {
-      if (array[c] -> next = NULL) {
-        cout << "Found" << endl;
-        array[c] = NULL;
-        break;
+    if (newArray[c] != NULL) {
+      if (newArray[c] -> id == num) {
+        //First layer
+        if (newArray[c] -> next == NULL) {
+          newArray[c] = NULL;
+        }
+        else {
+          newArray[c] = newArray[c] -> next;
+        }
       }
-      else {
-        array[c] = array[c] -> next;
-        break;
+      else if (newArray[c] -> next != NULL){
+        //Check second layer
+        if (newArray[c] -> next -> id == num) {
+          if (newArray[c] -> next -> next == NULL) {
+            newArray[c] -> next = NULL;
+          }
+          else {
+            newArray[c] -> next = newArray[c] -> next -> next;
+          }
+        }
+        else if (newArray[c] -> next -> next != NULL) {
+          if (newArray[c] -> next -> next -> id == num) {
+            newArray[c] -> next -> next = NULL;
+          }
+        }
       }
-    }
-    else if (array[c] -> next != NULL && array[c] -> next -> id == num) {
-      if (array[c] -> next -> next == NULL) {
-        array[c] -> next = NULL;
-      }
-      else {
-        array[c] -> next = array[c] -> next -> next;
-      }
-    }
-    else if (array[c] -> next != NULL && array[c] -> next -> next != NULL && array[c] -> next -> next -> id == num) {
-      array[c] -> next -> next = NULL;
     }
   }
-  return array;
+  return newArray;
 }
 
 void print(Student** &array, int size) {
@@ -281,7 +282,8 @@ void print(Student** &array, int size) {
 }
 
 
-Student* randomStu(vector<char*> first, vector<char*> last) { //Returns a random student. Due to how rand() works, first student will always be the same.
+Student* randomStu(vector<char*> first, vector<char*> last) { //Returns a random student. rand() is weird, so student order will always be the same.
+
   Student* newStu = new Student();
   int fSize = first.size();
   int lSize = last.size();
@@ -292,7 +294,6 @@ Student* randomStu(vector<char*> first, vector<char*> last) { //Returns a random
   vector<char*> :: iterator i;
   for ( i = first.begin(); i != first.end(); i++) { //If the index matches random int
     if (fIndex == randF) {
-      cout << (*i) << endl;
       strcpy(newStu -> fname, (*i));
     }
     fIndex++;
@@ -300,7 +301,6 @@ Student* randomStu(vector<char*> first, vector<char*> last) { //Returns a random
   vector<char*> :: iterator it;
   for ( it = last.begin(); it != last.end(); it++) {
     if (lIndex == randL) {
-      cout << (*it) << endl;
       strcpy(newStu -> lname, (*it));
     }
     lIndex++;
